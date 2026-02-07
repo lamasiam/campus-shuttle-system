@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
 import { Calendar, Clock, MapPin, QrCode } from 'lucide-react';
+import QRCode from 'qrcode';
 
 interface Booking {
   id: string;
@@ -20,6 +21,42 @@ interface QRCodeDisplayProps {
 }
 
 export function QRCodeDisplay({ open, onClose, booking }: QRCodeDisplayProps) {
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+
+  useEffect(() => {
+    if (booking && open) {
+      generateQRCode();
+    }
+  }, [booking, open]);
+
+  const generateQRCode = async () => {
+    if (!booking) return;
+    try {
+      // Create a comprehensive data payload for the QR code
+      const qrData = JSON.stringify({
+        id: booking.id,
+        route: booking.routeName,
+        date: new Date(booking.date).toISOString(),
+        time: booking.time,
+        from: booking.pickupStop,
+        to: booking.dropoffStop,
+        valid: true
+      });
+      
+      const url = await QRCode.toDataURL(qrData, {
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#0f172a',
+          light: '#ffffff'
+        }
+      });
+      setQrCodeUrl(url);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   if (!booking) return null;
 
   return (
@@ -46,33 +83,13 @@ export function QRCodeDisplay({ open, onClose, booking }: QRCodeDisplayProps) {
             <div className="relative group">
               <div className="absolute -inset-4 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl opacity-10 group-hover:opacity-20 transition-opacity blur-xl" />
               <div className="relative bg-white p-6 rounded-2xl border-2 border-slate-100 shadow-xl transition-transform group-hover:scale-[1.02] duration-300">
-                {/* Simulated QR Code using SVG pattern */}
-                <svg width="200" height="200" viewBox="0 0 200 200" className="drop-shadow-sm">
-                  <rect width="200" height="200" fill="white" />
-                  {/* Generate a simple QR-like pattern */}
-                  {Array.from({ length: 10 }).map((_, row) =>
-                    Array.from({ length: 10 }).map((_, col) => {
-                      const shouldFill = (row + col + parseInt(booking.id.slice(-2))) % 3 !== 0;
-                      return shouldFill ? (
-                        <rect
-                          key={`${row}-${col}`}
-                          x={col * 20}
-                          y={row * 20}
-                          width="18"
-                          height="18"
-                          fill="#0f172a"
-                        />
-                      ) : null;
-                    })
-                  )}
-                  {/* Position markers */}
-                  <rect x="0" y="0" width="60" height="60" fill="none" stroke="#0f172a" strokeWidth="6" />
-                  <rect x="140" y="0" width="60" height="60" fill="none" stroke="#0f172a" strokeWidth="6" />
-                  <rect x="0" y="140" width="60" height="60" fill="none" stroke="#0f172a" strokeWidth="6" />
-                  <rect x="20" y="20" width="20" height="20" fill="#0f172a" />
-                  <rect x="160" y="20" width="20" height="20" fill="#0f172a" />
-                  <rect x="20" y="160" width="20" height="20" fill="#0f172a" />
-                </svg>
+                {qrCodeUrl ? (
+                  <img src={qrCodeUrl} alt="Booking QR Code" className="w-[200px] h-[200px]" />
+                ) : (
+                  <div className="w-[200px] h-[200px] flex items-center justify-center bg-slate-50 rounded-lg">
+                    <span className="text-sm text-slate-400 font-medium">Generating QR...</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
