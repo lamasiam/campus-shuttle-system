@@ -110,7 +110,12 @@ export function BookingDialog({ open, onClose, route, onBook }: BookingDialogPro
                   mode="single"
                   selected={date}
                   onSelect={setDate}
-                  disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                  required
+                  disabled={(date) => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    return date < today;
+                  }}
                   className="rounded-xl"
                 />
               </div>
