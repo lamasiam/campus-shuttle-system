@@ -84,20 +84,22 @@ export function BookingDialog({ open, onClose, route, onBook }: BookingDialogPro
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[95vh] overflow-y-auto rounded-3xl border-0 shadow-2xl p-0 overflow-hidden">
-        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-8 text-white relative">
-          <div className="absolute top-0 right-0 p-8 opacity-10">
-            <CalendarIcon size={120} className="rotate-12" />
+      <DialogContent className="max-w-2xl h-[90vh] p-0 border-0 shadow-2xl overflow-hidden rounded-3xl flex flex-col">
+        <DialogHeader className="p-0">
+          <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-8 text-white relative">
+            <div className="absolute top-0 right-0 p-8 opacity-10">
+              <CalendarIcon size={120} className="rotate-12" />
+            </div>
+            <DialogTitle className="text-3xl font-bold tracking-tight">
+              Book a Seat
+            </DialogTitle>
+            <DialogDescription className="text-blue-100 text-lg mt-2 font-medium">
+              {route.name} • Reserve your spot
+            </DialogDescription>
           </div>
-          <DialogTitle className="text-3xl font-bold tracking-tight">
-            Book a Seat
-          </DialogTitle>
-          <DialogDescription className="text-blue-100 text-lg mt-2 font-medium">
-            {route.name} • Reserve your spot
-          </DialogDescription>
-        </div>
+        </DialogHeader>
 
-        <div className="p-8 space-y-8 bg-white">
+        <div className="flex-1 overflow-y-auto p-8 bg-white">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Date Selection */}
             <div className="space-y-4">
@@ -182,7 +184,7 @@ export function BookingDialog({ open, onClose, route, onBook }: BookingDialogPro
 
           {/* Booking Summary */}
           {date && time && pickupStop && dropoffStop && (
-            <div className="p-5 bg-gradient-to-br from-slate-50 to-blue-50 rounded-2xl border border-blue-100/50 space-y-3 relative overflow-hidden group">
+            <div className="mt-8 p-5 bg-gradient-to-br from-slate-50 to-blue-50 rounded-2xl border border-blue-100/50 space-y-3 relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform duration-500">
                 <Bus size={64} className="text-blue-900" />
               </div>
@@ -212,7 +214,7 @@ export function BookingDialog({ open, onClose, route, onBook }: BookingDialogPro
           )}
         </div>
 
-        <DialogFooter className="p-8 bg-slate-50 border-t border-slate-100 gap-3">
+        <DialogFooter className="p-8 bg-slate-50 border-t border-slate-100 gap-3 mt-auto">
           <Button 
             variant="ghost" 
             onClick={onClose}
