@@ -1,152 +1,165 @@
-import React, { useState } from "react";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Bus, Mail, Lock, Loader2, Sparkles } from "lucide-react";
-import { toast } from "sonner";
+import React, { useState } from 'react';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
 interface AuthFormProps {
-  onLogin: (email: string, password: string) => void;
+  onLogin: (user: { id: string; name: string; email: string; role: 'student' | 'admin' | 'driver' | 'coordinator' }) => void;
 }
 
-export default function AuthForm({ onLogin }: AuthFormProps) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+export function AuthForm({ onLogin }: AuthFormProps) {
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [registerName, setRegisterName] = useState('');
+  const [registerEmail, setRegisterEmail] = useState('');
+  const [registerPassword, setRegisterPassword] = useState('');
+  const [role, setRole] = useState<'student' | 'admin' | 'driver' | 'coordinator'>('student');
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    // Mock login - detect role from email
+    let userRole: 'student' | 'admin' | 'driver' | 'coordinator' = 'student';
+    let userName = 'Student User';
     
-    if (!email || !password) {
-      toast.error("Please fill in all fields");
-      return;
+    if (loginEmail.includes('admin')) {
+      userRole = 'admin';
+      userName = 'Admin User';
+    } else if (loginEmail.includes('driver')) {
+      userRole = 'driver';
+      userName = 'John Smith';
+    } else if (loginEmail.includes('coordinator')) {
+      userRole = 'coordinator';
+      userName = 'Coordinator User';
     }
-
-    setIsLoading(true);
-    try {
-      await onLogin(email, password);
-    } catch (error) {
-      toast.error("Login failed. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
+    
+    onLogin({
+      id: '1',
+      name: userName,
+      email: loginEmail,
+      role: userRole,
+    });
   };
 
-  const quickLogins = [
-    { role: "Student", email: "student1@campus.edu", password: "student123", color: "from-blue-500 to-cyan-500" },
-    { role: "Driver", email: "driver1@campus.edu", password: "driver123", color: "from-purple-500 to-pink-500" },
-    { role: "Coordinator", email: "coordinator@campus.edu", password: "coord123", color: "from-orange-500 to-red-500" },
-    { role: "Admin", email: "admin@campus.edu", password: "admin123", color: "from-green-500 to-teal-500" },
-  ];
+  const handleRegister = (e: React.FormEvent) => {
+    e.preventDefault();
+    onLogin({
+      id: '2',
+      name: registerName,
+      email: registerEmail,
+      role: role,
+    });
+  };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-white/5 rounded-full blur-2xl animate-pulse"></div>
-      </div>
-
-      <div className="w-full max-w-md relative z-10">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-2xl shadow-2xl mb-4 transform hover:scale-110 transition-transform duration-300">
-            <Bus className="w-10 h-10 text-purple-600" />
-          </div>
-          <h1 className="text-4xl font-bold text-white mb-2 flex items-center justify-center gap-2">
-            Campus Shuttle
-            <Sparkles className="w-6 h-6 text-yellow-300 animate-pulse" />
-          </h1>
-          <p className="text-white/80 text-lg">Your journey starts here</p>
-        </div>
-
-        <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-gray-700 font-semibold flex items-center gap-2">
-                <Mail className="w-4 h-4 text-purple-600" />
-                Email Address
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="student@campus.edu"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-12 border-2 border-gray-200 focus:border-purple-500 rounded-xl transition-all duration-300"
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-gray-700 font-semibold flex items-center gap-2">
-                <Lock className="w-4 h-4 text-purple-600" />
-                Password
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="h-12 border-2 border-gray-200 focus:border-purple-500 rounded-xl transition-all duration-300"
-                disabled={isLoading}
-              />
-            </div>
-
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full h-12 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                <>
-                  <Bus className="mr-2 h-5 w-5" />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Campus Shuttle System</CardTitle>
+          <CardDescription>Sign in to track and book shuttle rides</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="login" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="login">Login</TabsTrigger>
+              <TabsTrigger value="register">Register</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="login">
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="login-email">Email</Label>
+                  <Input
+                    id="login-email"
+                    type="email"
+                    placeholder="your.email@campus.edu"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="login-password">Password</Label>
+                  <Input
+                    id="login-password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full">
                   Sign In
-                </>
-              )}
-            </Button>
-          </form>
-
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-gray-500 font-medium">Quick Login</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            {quickLogins.map((user) => (
-              <button
-                key={user.role}
-                onClick={() => {
-                  setEmail(user.email);
-                  setPassword(user.password);
-                  toast.success(`Filled ${user.role} credentials`);
-                }}
-                disabled={isLoading}
-                className={`p-3 rounded-xl bg-gradient-to-br ${user.color} text-white font-semibold text-sm shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300 disabled:opacity-50`}
-              >
-                {user.role}
-              </button>
-            ))}
-          </div>
-
-          <p className="text-center text-sm text-gray-500 mt-6">
-            Click quick login buttons to auto-fill credentials
-          </p>
-        </div>
-
-        <div className="text-center mt-6 text-white/60 text-sm">
-          © 2026 Campus Shuttle System
-        </div>
-      </div>
+                </Button>
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <p className="font-medium">Quick Login Tips:</p>
+                  <p>• Use "student" in email for student access</p>
+                  <p>• Use "driver" in email for driver access</p>
+                  <p>• Use "coordinator" in email for coordinator access</p>
+                  <p>• Use "admin" in email for admin access</p>
+                </div>
+              </form>
+            </TabsContent>
+            
+            <TabsContent value="register">
+              <form onSubmit={handleRegister} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="register-name">Full Name</Label>
+                  <Input
+                    id="register-name"
+                    type="text"
+                    placeholder="John Doe"
+                    value={registerName}
+                    onChange={(e) => setRegisterName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="register-email">Email</Label>
+                  <Input
+                    id="register-email"
+                    type="email"
+                    placeholder="your.email@campus.edu"
+                    value={registerEmail}
+                    onChange={(e) => setRegisterEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="register-password">Password</Label>
+                  <Input
+                    id="register-password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={registerPassword}
+                    onChange={(e) => setRegisterPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="role">Role</Label>
+                  <select
+                    id="role"
+                    value={role}
+                    onChange={(e) => setRole(e.target.value as 'student' | 'admin' | 'driver' | 'coordinator')}
+                    className="w-full px-3 py-2 border border-input rounded-md"
+                  >
+                    <option value="student">Student</option>
+                    <option value="admin">Admin</option>
+                    <option value="driver">Driver</option>
+                    <option value="coordinator">Coordinator</option>
+                  </select>
+                </div>
+                <Button type="submit" className="w-full">
+                  Create Account
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 }
