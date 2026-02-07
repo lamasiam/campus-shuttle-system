@@ -26,7 +26,7 @@ interface IncidentReportProps {
   onSubmitIncident: (incident: Omit<Incident, 'id' | 'timestamp' | 'status'>) => void;
   incidents: Incident[];
   onUpdateStatus: (id: string, status: 'open' | 'in-progress' | 'resolved') => void;
-  userRole: 'student' | 'admin';
+  userRole: 'student' | 'admin' | 'driver' | 'coordinator';
 }
 
 export function IncidentReport({
@@ -62,68 +62,85 @@ export function IncidentReport({
     setPriority('medium');
   };
 
-  const getStatusIcon = (status: string) => {
+  const getStatusStyles = (status: string) => {
     switch (status) {
       case 'open':
-        return <AlertCircle size={16} className="text-red-500" />;
+        return 'bg-rose-50 text-rose-700 border-rose-100';
       case 'in-progress':
-        return <Clock size={16} className="text-yellow-500" />;
+        return 'bg-amber-50 text-amber-700 border-amber-100';
       case 'resolved':
-        return <CheckCircle2 size={16} className="text-green-500" />;
+        return 'bg-emerald-50 text-emerald-700 border-emerald-100';
       default:
-        return null;
+        return 'bg-slate-50 text-slate-700 border-slate-100';
     }
   };
 
-  const getPriorityColor = (priority: string) => {
+  const getPriorityStyles = (priority: string) => {
     switch (priority) {
       case 'high':
-        return 'bg-red-500';
+        return 'bg-rose-500 shadow-rose-200';
       case 'medium':
-        return 'bg-yellow-500';
+        return 'bg-amber-500 shadow-amber-200';
       case 'low':
-        return 'bg-blue-500';
+        return 'bg-blue-500 shadow-blue-200';
       default:
-        return 'bg-gray-500';
+        return 'bg-slate-500 shadow-slate-200';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'open':
+        return <AlertCircle size={20} className="text-rose-600" />;
+      case 'in-progress':
+        return <Clock size={20} className="text-amber-600" />;
+      case 'resolved':
+        return <CheckCircle2 size={20} className="text-emerald-600" />;
+      default:
+        return <AlertCircle size={20} className="text-slate-500" />;
     }
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-700">
       {/* Report Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Report an Incident</CardTitle>
-          <CardDescription>Submit delays, accidents, or other issues</CardDescription>
+      <Card className="lg:col-span-5 border-0 bg-white shadow-xl shadow-slate-200/50 overflow-hidden">
+        <div className="h-2 bg-gradient-to-r from-emerald-600 to-teal-600" />
+        <CardHeader className="pb-4">
+          <CardTitle className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+            <AlertCircle className="text-rose-500" />
+            Report an Incident
+          </CardTitle>
+          <CardDescription className="text-slate-500 font-medium">Submit delays, accidents, or other operational issues</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="incident-type">Incident Type</Label>
+              <Label htmlFor="incident-type" className="text-sm font-bold text-slate-700 uppercase tracking-wider">Incident Type</Label>
               <Select value={incidentType} onValueChange={setIncidentType}>
-                <SelectTrigger id="incident-type">
-                  <SelectValue placeholder="Select incident type" />
+                <SelectTrigger id="incident-type" className="h-12 border-slate-200 bg-slate-50/50 focus:ring-emerald-500 rounded-xl transition-all">
+                  <SelectValue placeholder="What happened?" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="delay">Delay</SelectItem>
-                  <SelectItem value="accident">Accident</SelectItem>
-                  <SelectItem value="breakdown">Breakdown</SelectItem>
-                  <SelectItem value="overcrowding">Overcrowding</SelectItem>
-                  <SelectItem value="route-deviation">Route Deviation</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                <SelectContent className="rounded-xl border-slate-200">
+                  <SelectItem value="delay" className="rounded-lg mx-1 my-0.5">Delay</SelectItem>
+                  <SelectItem value="accident" className="rounded-lg mx-1 my-0.5">Accident</SelectItem>
+                  <SelectItem value="breakdown" className="rounded-lg mx-1 my-0.5">Breakdown</SelectItem>
+                  <SelectItem value="overcrowding" className="rounded-lg mx-1 my-0.5">Overcrowding</SelectItem>
+                  <SelectItem value="route-deviation" className="rounded-lg mx-1 my-0.5">Route Deviation</SelectItem>
+                  <SelectItem value="other" className="rounded-lg mx-1 my-0.5">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="route">Route</Label>
+              <Label htmlFor="route" className="text-sm font-bold text-slate-700 uppercase tracking-wider">Affected Route</Label>
               <Select value={routeId} onValueChange={setRouteId}>
-                <SelectTrigger id="route">
+                <SelectTrigger id="route" className="h-12 border-slate-200 bg-slate-50/50 focus:ring-emerald-500 rounded-xl transition-all">
                   <SelectValue placeholder="Select route" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="rounded-xl border-slate-200">
                   {routes.map((route) => (
-                    <SelectItem key={route.id} value={route.id}>
+                    <SelectItem key={route.id} value={route.id} className="rounded-lg mx-1 my-0.5">
                       {route.name}
                     </SelectItem>
                   ))}
@@ -132,91 +149,134 @@ export function IncidentReport({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="priority">Priority</Label>
-              <Select
-                value={priority}
-                onValueChange={(val) => setPriority(val as 'low' | 'medium' | 'high')}
-              >
-                <SelectTrigger id="priority">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="priority" className="text-sm font-bold text-slate-700 uppercase tracking-wider">Priority Level</Label>
+              <div className="grid grid-cols-3 gap-3">
+                {(['low', 'medium', 'high'] as const).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setPriority(p)}
+                    className={`py-2.5 rounded-xl border-2 text-sm font-bold uppercase tracking-tighter transition-all ${
+                      priority === p 
+                        ? p === 'high' ? 'bg-rose-50 border-rose-500 text-rose-600 shadow-sm' :
+                          p === 'medium' ? 'bg-amber-50 border-amber-500 text-amber-600 shadow-sm' :
+                          'bg-blue-50 border-blue-500 text-blue-600 shadow-sm'
+                        : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description" className="text-sm font-bold text-slate-700 uppercase tracking-wider">Detailed Description</Label>
               <Textarea
                 id="description"
-                placeholder="Describe the incident in detail..."
+                placeholder="Please provide as much detail as possible..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={4}
                 required
+                className="resize-none border-slate-200 bg-slate-50/50 focus:ring-emerald-500 rounded-2xl p-4 transition-all"
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={!incidentType || !routeId}>
-              Submit Report
+            <Button 
+              type="submit" 
+              className="w-full h-14 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-lg shadow-lg shadow-emerald-200 transition-all active:scale-[0.98] disabled:opacity-50 disabled:grayscale" 
+              disabled={!incidentType || !routeId}
+            >
+              Submit Incident Report
             </Button>
           </form>
         </CardContent>
       </Card>
 
       {/* Incidents List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Incidents</CardTitle>
-          <CardDescription>Track reported issues and their status</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-[500px] pr-4">
-            <div className="space-y-4">
-              {incidents.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">No incidents reported</p>
-              ) : (
-                incidents.map((incident) => (
-                  <Card key={incident.id} className="p-4">
-                    <div className="space-y-3">
+      <div className="lg:col-span-7 space-y-6">
+        <div className="flex items-center justify-between px-2">
+          <div>
+            <h3 className="text-2xl font-bold text-slate-900">Recent Incidents</h3>
+            <p className="text-slate-500 font-medium">Monitoring and tracking reported issues</p>
+          </div>
+          <Badge className="bg-slate-100 text-slate-600 border-slate-200 shadow-none">
+            {incidents.length} reported
+          </Badge>
+        </div>
+
+        <ScrollArea className="h-[700px] pr-4 -mr-4">
+          <div className="space-y-4 pb-8">
+            {incidents.length === 0 ? (
+              <Card className="border-2 border-dashed border-slate-200 bg-slate-50/50">
+                <CardContent className="flex flex-col items-center justify-center py-24 text-center">
+                  <div className="w-20 h-20 rounded-3xl bg-white shadow-sm flex items-center justify-center mb-6">
+                    <CheckCircle2 size={40} className="text-emerald-300" />
+                  </div>
+                  <h4 className="text-xl font-bold text-slate-900">All clear!</h4>
+                  <p className="text-slate-500 max-w-[240px] mt-2">No incidents have been reported recently.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              incidents.map((incident) => (
+                <Card key={incident.id} className="group border-0 bg-white shadow-sm hover:shadow-md transition-all duration-300 animate-in fade-in slide-in-from-right-4">
+                  <CardContent className="p-6">
+                    <div className="space-y-4">
                       <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-2">
-                          {getStatusIcon(incident.status)}
+                        <div className="flex items-center gap-4">
+                          <div className={`p-3 rounded-2xl ${getStatusStyles(incident.status)} border bg-opacity-50`}>
+                            {getStatusIcon(incident.status)}
+                          </div>
                           <div>
-                            <p className="font-medium capitalize">{incident.type}</p>
-                            <p className="text-sm text-muted-foreground">{incident.routeName}</p>
+                            <h4 className="font-bold text-slate-900 capitalize leading-none">{incident.type}</h4>
+                            <p className="text-sm text-slate-500 mt-1 font-medium">{incident.routeName}</p>
                           </div>
                         </div>
                         <div className="flex flex-col items-end gap-2">
-                          <div
-                            className={`w-2 h-2 rounded-full ${getPriorityColor(incident.priority)}`}
-                          />
-                          <Badge variant="secondary" className="text-xs">
+                          <Badge className={`${getPriorityStyles(incident.priority)} text-white border-0 text-[10px] font-bold uppercase tracking-wider px-2`}>
+                            {incident.priority} priority
+                          </Badge>
+                          <Badge variant="outline" className={`text-[10px] font-bold uppercase tracking-tighter ${getStatusStyles(incident.status)} border`}>
                             {incident.status}
                           </Badge>
                         </div>
                       </div>
-                      <p className="text-sm">{incident.description}</p>
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>{incident.reportedBy}</span>
-                        <span>{new Date(incident.timestamp).toLocaleString()}</span>
+
+                      <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100/50">
+                        <p className="text-sm text-slate-700 leading-relaxed font-medium">
+                          {incident.description}
+                        </p>
                       </div>
+
+                      <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[8px]">
+                            {incident.reportedBy.charAt(0)}
+                          </div>
+                          <span>{incident.reportedBy}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Clock size={12} />
+                          <span>{new Date(incident.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                      </div>
+
                       {userRole === 'admin' && incident.status !== 'resolved' && (
-                        <div className="flex gap-2 pt-2">
+                        <div className="flex gap-3 pt-2">
                           {incident.status === 'open' && (
                             <Button
                               size="sm"
                               variant="outline"
+                              className="flex-1 h-10 rounded-xl border-slate-200 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 font-bold transition-all"
                               onClick={() => onUpdateStatus(incident.id, 'in-progress')}
                             >
-                              Mark In Progress
+                              Process Incident
                             </Button>
                           )}
                           <Button
                             size="sm"
+                            className="flex-1 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-100 transition-all"
                             onClick={() => onUpdateStatus(incident.id, 'resolved')}
                           >
                             Mark Resolved
@@ -224,13 +284,13 @@ export function IncidentReport({
                         </div>
                       )}
                     </div>
-                  </Card>
-                ))
-              )}
-            </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        </ScrollArea>
+      </div>
     </div>
   );
 }

@@ -4,13 +4,15 @@ import { v4 as uuidv4 } from 'uuid';
 
 describe('Booking System', () => {
   let studentId, scheduleId, bookingId;
+  let studentEmail;
 
   beforeAll(async () => {
     // Create test student
     studentId = uuidv4();
+    studentEmail = `student-${studentId}@test.com`;
     await runAsync(
       'INSERT INTO users (id, name, email, password, role) VALUES (?, ?, ?, ?, ?)',
-      [studentId, 'Test Student', 'student@test.com', 'hash', 'student']
+      [studentId, 'Test Student', studentEmail, 'hash', 'student']
     );
 
     // Get first schedule
@@ -18,7 +20,11 @@ describe('Booking System', () => {
     scheduleId = schedule.id;
   });
 
-  afterAll(() => {
+  afterAll(async () => {
+    if (studentId) {
+      await runAsync('DELETE FROM bookings WHERE studentId = ?', [studentId]);
+      await runAsync('DELETE FROM users WHERE id = ?', [studentId]);
+    }
     closeDatabase();
   });
 

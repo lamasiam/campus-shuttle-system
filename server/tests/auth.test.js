@@ -5,33 +5,44 @@ import { v4 as uuidv4 } from 'uuid';
 
 describe('Authentication System', () => {
   let testUserId;
+  let testUserEmail;
+  let newUserId;
+  let newUserEmail;
 
   beforeAll(async () => {
     // Setup test user
     const hashedPassword = await bcrypt.hash('testpass123', 10);
     testUserId = uuidv4();
+    testUserEmail = `test-${testUserId}@example.com`;
     await runAsync(
       'INSERT INTO users (id, name, email, password, role) VALUES (?, ?, ?, ?, ?)',
-      [testUserId, 'Test User', 'test@example.com', hashedPassword, 'student']
+      [testUserId, 'Test User', testUserEmail, hashedPassword, 'student']
     );
   });
 
-  afterAll(() => {
+  afterAll(async () => {
+    if (newUserId) {
+      await runAsync('DELETE FROM users WHERE id = ?', [newUserId]);
+    }
+    if (testUserId) {
+      await runAsync('DELETE FROM users WHERE id = ?', [testUserId]);
+    }
     closeDatabase();
   });
 
   it('should create a new user', async () => {
-    const userId = uuidv4();
+    newUserId = uuidv4();
+    newUserEmail = `newuser-${newUserId}@example.com`;
     const hashedPassword = await bcrypt.hash('newpass123', 10);
 
     await runAsync(
       'INSERT INTO users (id, name, email, password, role) VALUES (?, ?, ?, ?, ?)',
-      [userId, 'New User', 'newuser@example.com', hashedPassword, 'student']
+      [newUserId, 'New User', newUserEmail, hashedPassword, 'student']
     );
 
-    const user = await getAsync('SELECT * FROM users WHERE id = ?', [userId]);
+    const user = await getAsync('SELECT * FROM users WHERE id = ?', [newUserId]);
     expect(user).toBeDefined();
-    expect(user.email).toBe('newuser@example.com');
+    expect(user.email).toBe(newUserEmail);
     expect(user.role).toBe('student');
   });
 
@@ -54,8 +65,8 @@ describe('Authentication System', () => {
   });
 
   it('should find user by email', async () => {
-    const user = await getAsync('SELECT * FROM users WHERE email = ?', ['test@example.com']);
+    const user = await getAsync('SELECT * FROM users WHERE email = ?', [testUserEmail]);
     expect(user).toBeDefined();
-    expect(user.email).toBe('test@example.com');
+    expect(user.email).toBe(testUserEmail);
   });
 });

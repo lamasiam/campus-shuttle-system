@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AuthForm } from './components/AuthForm';
+import Login from './components/Login';
 import { StudentDashboard } from './components/StudentDashboard';
 import { DriverDashboard } from './components/DriverDashboard';
 import { CoordinatorDashboard } from './components/CoordinatorDashboard';
@@ -17,6 +17,7 @@ import { QRScanner } from './components/QRScanner';
 import { QRCodeDisplay } from './components/QRCodeDisplay';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Button } from './components/ui/button';
+import { Badge } from './components/ui/badge';
 import { LogOut, Bus } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 
@@ -460,7 +461,7 @@ export default function App() {
   };
 
   if (!user) {
-    return <AuthForm onLogin={handleLogin} />;
+    return <Login onLogin={handleLogin} />;
   }
 
   const userBookings = bookings.filter((b) => b.userId === user.id);
@@ -469,30 +470,77 @@ export default function App() {
   const upcomingBookings = userBookings.filter(
     (b) => b.status === 'confirmed' && new Date(b.date) >= new Date()
   ).length;
+  const roleStyles = {
+    student: {
+      pageBg: 'bg-[#f8fafc] bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-50 via-slate-50 to-indigo-50',
+      headerGradient: 'from-blue-600 to-indigo-700',
+      headerShadow: 'shadow-blue-200',
+      headerBorder: 'border-indigo-100/50',
+      titleGradient: 'from-blue-700 to-indigo-800',
+      subtitle: 'text-indigo-400',
+      badge: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+    },
+    driver: {
+      pageBg: 'bg-[#f8fafc] bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-emerald-50 via-slate-50 to-teal-50',
+      headerGradient: 'from-emerald-600 to-teal-700',
+      headerShadow: 'shadow-emerald-200',
+      headerBorder: 'border-emerald-100/50',
+      titleGradient: 'from-emerald-700 to-teal-800',
+      subtitle: 'text-emerald-400',
+      badge: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+    },
+    coordinator: {
+      pageBg: 'bg-[#f8fafc] bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-purple-50 via-slate-50 to-indigo-50',
+      headerGradient: 'from-purple-600 to-indigo-700',
+      headerShadow: 'shadow-purple-200',
+      headerBorder: 'border-purple-100/50',
+      titleGradient: 'from-purple-700 to-indigo-800',
+      subtitle: 'text-purple-400',
+      badge: 'bg-purple-50 text-purple-700 border-purple-100',
+    },
+    admin: {
+      pageBg: 'bg-[#f8fafc] bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-50 via-blue-50 to-indigo-50',
+      headerGradient: 'from-slate-700 to-indigo-700',
+      headerShadow: 'shadow-slate-200',
+      headerBorder: 'border-slate-200/60',
+      titleGradient: 'from-slate-700 to-indigo-800',
+      subtitle: 'text-slate-500',
+      badge: 'bg-slate-100 text-slate-700 border-slate-200',
+    },
+  }[user.role];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className={`min-h-screen ${roleStyles.pageBg}`}>
       <Toaster position="top-right" />
       
       {/* Header */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-50">
+      <header className={`bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b ${roleStyles.headerBorder} shadow-sm`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Bus size={32} className="text-blue-600" />
+              <div className={`bg-gradient-to-br ${roleStyles.headerGradient} p-2 rounded-lg shadow-lg ${roleStyles.headerShadow}`}>
+                <Bus size={24} className="text-white" />
+              </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Campus Shuttle System</h1>
-                <p className="text-sm text-gray-600">Real-time tracking & booking</p>
+                <h1 className={`text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r ${roleStyles.titleGradient}`}>Campus Shuttle</h1>
+                <p className={`text-xs font-medium uppercase tracking-wider ${roleStyles.subtitle}`}>Management System</p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="font-medium">{user.name}</p>
-                <p className="text-sm text-muted-foreground capitalize">{user.role}</p>
+            <div className="flex items-center gap-6">
+              <div className="hidden md:flex flex-col items-end">
+                <p className="font-semibold text-gray-800">{user.name}</p>
+                <Badge variant="outline" className={`text-[10px] uppercase tracking-tighter py-0 h-4 ${roleStyles.badge}`}>
+                  {user.role}
+                </Badge>
               </div>
-              <Button variant="outline" onClick={handleLogout}>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={handleLogout}
+                className="text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+              >
                 <LogOut size={18} className="mr-2" />
-                Logout
+                <span className="hidden sm:inline">Logout</span>
               </Button>
             </div>
           </div>
@@ -503,22 +551,22 @@ export default function App() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Student Interface */}
         {user.role === 'student' && (
-          <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-7">
-              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-              <TabsTrigger value="map">Map</TabsTrigger>
-              <TabsTrigger value="routes">Routes</TabsTrigger>
-              <TabsTrigger value="bookings">My Bookings</TabsTrigger>
-              <TabsTrigger value="incidents">Incidents</TabsTrigger>
-              <TabsTrigger value="notifications">
+          <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-8">
+            <TabsList className="flex w-full overflow-x-auto p-1 bg-white/50 backdrop-blur-sm border border-indigo-100/50 rounded-xl shadow-sm no-scrollbar">
+              <TabsTrigger value="dashboard" className="flex-1 rounded-lg py-2.5 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-md">Dashboard</TabsTrigger>
+              <TabsTrigger value="map" className="flex-1 rounded-lg py-2.5 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-md">Map</TabsTrigger>
+              <TabsTrigger value="routes" className="flex-1 rounded-lg py-2.5 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-md">Routes</TabsTrigger>
+              <TabsTrigger value="bookings" className="flex-1 rounded-lg py-2.5 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-md">My Bookings</TabsTrigger>
+              <TabsTrigger value="incidents" className="flex-1 rounded-lg py-2.5 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-md">Incidents</TabsTrigger>
+              <TabsTrigger value="notifications" className="flex-1 rounded-lg py-2.5 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-md relative">
                 Notifications
                 {unreadNotifications > 0 && (
-                  <span className="ml-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 bg-gradient-to-br from-red-500 to-pink-600 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center shadow-sm">
                     {unreadNotifications}
                   </span>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="feedback">Feedback</TabsTrigger>
+              <TabsTrigger value="feedback" className="flex-1 rounded-lg py-2.5 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-md">Feedback</TabsTrigger>
             </TabsList>
 
             <TabsContent value="dashboard">
@@ -596,11 +644,11 @@ export default function App() {
 
         {/* Driver Interface */}
         {user.role === 'driver' && (
-          <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-              <TabsTrigger value="incidents">Report Incident</TabsTrigger>
-              <TabsTrigger value="map">Live Map</TabsTrigger>
+          <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-8">
+            <TabsList className="flex w-full p-1 bg-white/50 backdrop-blur-sm border border-emerald-100/50 rounded-xl shadow-sm">
+              <TabsTrigger value="dashboard" className="flex-1 rounded-lg py-2.5 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-emerald-600 data-[state=active]:shadow-md">Dashboard</TabsTrigger>
+              <TabsTrigger value="incidents" className="flex-1 rounded-lg py-2.5 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-emerald-600 data-[state=active]:shadow-md">Report Incident</TabsTrigger>
+              <TabsTrigger value="map" className="flex-1 rounded-lg py-2.5 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-emerald-600 data-[state=active]:shadow-md">Live Map</TabsTrigger>
             </TabsList>
 
             <TabsContent value="dashboard">
@@ -635,14 +683,14 @@ export default function App() {
 
         {/* Transport Coordinator Interface */}
         {user.role === 'coordinator' && (
-          <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6">
-              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-              <TabsTrigger value="routes">Routes</TabsTrigger>
-              <TabsTrigger value="drivers">Drivers</TabsTrigger>
-              <TabsTrigger value="monitoring">Live Monitor</TabsTrigger>
-              <TabsTrigger value="incidents">Incidents</TabsTrigger>
-              <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-8">
+            <TabsList className="flex w-full overflow-x-auto p-1 bg-white/50 backdrop-blur-sm border border-purple-100/50 rounded-xl shadow-sm no-scrollbar">
+              <TabsTrigger value="dashboard" className="flex-1 rounded-lg py-2.5 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-md">Dashboard</TabsTrigger>
+              <TabsTrigger value="routes" className="flex-1 rounded-lg py-2.5 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-md">Routes</TabsTrigger>
+              <TabsTrigger value="drivers" className="flex-1 rounded-lg py-2.5 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-md">Drivers</TabsTrigger>
+              <TabsTrigger value="monitoring" className="flex-1 rounded-lg py-2.5 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-md">Live Monitor</TabsTrigger>
+              <TabsTrigger value="incidents" className="flex-1 rounded-lg py-2.5 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-md">Incidents</TabsTrigger>
+              <TabsTrigger value="analytics" className="flex-1 rounded-lg py-2.5 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-md">Analytics</TabsTrigger>
             </TabsList>
 
             <TabsContent value="dashboard">
@@ -691,13 +739,13 @@ export default function App() {
         {/* Admin Interface */}
         {user.role === 'admin' && (
           <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6">
-              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-              <TabsTrigger value="routes">Routes</TabsTrigger>
-              <TabsTrigger value="drivers">Drivers</TabsTrigger>
-              <TabsTrigger value="incidents">Incidents</TabsTrigger>
-              <TabsTrigger value="monitoring">Monitor</TabsTrigger>
-              <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsList className="flex w-full overflow-x-auto p-1 bg-white/60 backdrop-blur-sm border border-slate-200/60 rounded-xl shadow-sm no-scrollbar">
+              <TabsTrigger value="dashboard" className="flex-1 rounded-lg py-2.5 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-md">Dashboard</TabsTrigger>
+              <TabsTrigger value="routes" className="flex-1 rounded-lg py-2.5 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-md">Routes</TabsTrigger>
+              <TabsTrigger value="drivers" className="flex-1 rounded-lg py-2.5 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-md">Drivers</TabsTrigger>
+              <TabsTrigger value="incidents" className="flex-1 rounded-lg py-2.5 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-md">Incidents</TabsTrigger>
+              <TabsTrigger value="monitoring" className="flex-1 rounded-lg py-2.5 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-md">Monitor</TabsTrigger>
+              <TabsTrigger value="analytics" className="flex-1 rounded-lg py-2.5 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-md">Analytics</TabsTrigger>
             </TabsList>
 
             <TabsContent value="dashboard">
