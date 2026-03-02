@@ -20,6 +20,7 @@ import { Button } from './components/ui/button';
 import { Badge } from './components/ui/badge';
 import { LogOut, Bus } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
+import api from '../services/api';
 
 interface User {
   id: string;
@@ -36,6 +37,7 @@ interface Route {
   frequency: string;
   operatingHours: string;
   estimatedDuration: string;
+  schedules?: { id: string; departureTime: string }[];
 }
 
 interface Shuttle {
@@ -51,12 +53,15 @@ interface Booking {
   id: string;
   userId: string;
   routeId: string;
+  scheduleId?: string;
   routeName: string;
   date: Date;
   time: string;
   pickupStop: string;
   dropoffStop: string;
-  status: 'confirmed' | 'completed' | 'cancelled';
+  qrCodeData?: string;
+  qrCodeUrl?: string;
+  status: 'confirmed' | 'completed' | 'cancelled' | 'boarded';
 }
 
 interface Incident {
@@ -260,6 +265,28 @@ export default function App() {
 
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
 
+  const formatTime = (iso: string) =>
+    new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+
+  const mapBookingFromApi = (booking: any): Booking => {
+    const dateSource = booking.departureTime || booking.date;
+    const bookingDate = dateSource ? new Date(dateSource) : new Date();
+    return {
+      id: booking.id,
+      userId: booking.studentId || booking.userId,
+      routeId: booking.routeId || '',
+      scheduleId: booking.scheduleId,
+      routeName: booking.routeName || 'Route',
+      date: bookingDate,
+      time: booking.departureTime ? formatTime(booking.departureTime) : booking.time || formatTime(bookingDate.toISOString()),
+      pickupStop: booking.pickupStopName ?? String(booking.pickupStop ?? ''),
+      dropoffStop: booking.dropoffStopName ?? String(booking.dropoffStop ?? ''),
+      status: booking.status || 'confirmed',
+      qrCodeData: booking.qrCodeData || booking.qrCode,
+      qrCodeUrl: booking.qrCode,
+    };
+  };
+
   // Get driver assignment for current user
   const driverAssignment = user?.role === 'driver' 
     ? assignments.find(a => a.driverName === user.name && new Date(a.date).toDateString() === new Date().toDateString())
@@ -293,16 +320,25 @@ export default function App() {
     setSelectedRoute(selectedRoute === routeId ? null : routeId);
   };
 
-  const handleBookSeat = (routeId: string) => {
+  const handleBookSeat = async (routeId: string) => {
     const route = routes.find((r) => r.id === routeId);
     if (route) {
-      setSelectedRouteForBooking(route);
+      try {
+        const details = await api.student.getRouteDetails(routeId);
+        setSelectedRouteForBooking({
+          ...route,
+          schedules: details?.schedules || []
+        });
+      } catch {
+        setSelectedRouteForBooking({ ...route, schedules: [] });
+      }
       setBookingDialogOpen(true);
     }
   };
 
-  const handleConfirmBooking = (bookingData: {
+  const handleConfirmBooking = async (bookingData: {
     routeId: string;
+    scheduleId: string;
     date: Date;
     time: string;
     pickupStop: string;
@@ -311,49 +347,59 @@ export default function App() {
     const route = routes.find((r) => r.id === bookingData.routeId);
     if (!route || !user) return;
 
-    const newBooking: Booking = {
-      id: `booking-${Date.now()}`,
-      userId: user.id,
-      routeId: bookingData.routeId,
-      routeName: route.name,
-      date: bookingData.date,
-      time: bookingData.time,
-      pickupStop: bookingData.pickupStop,
-      dropoffStop: bookingData.dropoffStop,
-      status: 'confirmed',
-    };
+    const pickupIndex = route.stops.indexOf(bookingData.pickupStop);
+    const dropoffIndex = route.stops.indexOf(bookingData.dropoffStop);
+    try {
+      const res = await api.student.createBooking(
+        user.id,
+        bookingData.scheduleId,
+        pickupIndex >= 0 ? pickupIndex : 0,
+        dropoffIndex >= 0 ? dropoffIndex : 0
+      );
+      if (res?.success && res?.booking) {
+        const newBooking = mapBookingFromApi(res.booking);
+        setBookings([newBooking, ...bookings]);
+        setSelectedBookingForQR(newBooking);
+        setQRDisplayOpen(true);
 
-    setBookings([...bookings, newBooking]);
+        const newNotification: Notification = {
+          id: `notif-${Date.now()}`,
+          type: 'booking-confirmation',
+          title: 'Booking Confirmed',
+          message: `Your seat on ${newBooking.routeName} for ${newBooking.date.toLocaleDateString()} at ${
+            newBooking.time
+          } is confirmed`,
+          timestamp: new Date(),
+          read: false,
+          priority: 'medium',
+        };
 
-    // Show QR code
-    setSelectedBookingForQR(newBooking);
-    setQRDisplayOpen(true);
-
-    const newNotification: Notification = {
-      id: `notif-${Date.now()}`,
-      type: 'booking-confirmation',
-      title: 'Booking Confirmed',
-      message: `Your seat on ${route.name} for ${bookingData.date.toLocaleDateString()} at ${
-        bookingData.time
-      } is confirmed`,
-      timestamp: new Date(),
-      read: false,
-      priority: 'medium',
-    };
-
-    if (notificationsEnabled) {
-      setNotifications([newNotification, ...notifications]);
-      toast.success('Booking confirmed! Your QR code is ready.');
-    } else {
-      toast.success('Booking confirmed!');
+        if (notificationsEnabled) {
+          setNotifications([newNotification, ...notifications]);
+          toast.success('Booking confirmed! Your QR code is ready.');
+        } else {
+          toast.success('Booking confirmed!');
+        }
+      } else {
+        toast.error(res?.error || 'Booking failed');
+      }
+    } catch {
+      toast.error('Booking failed. Please try again.');
     }
   };
 
-  const handleCancelBooking = (bookingId: string) => {
-    setBookings(
-      bookings.map((b) => (b.id === bookingId ? { ...b, status: 'cancelled' as const } : b))
-    );
-    toast.info('Booking cancelled');
+  const handleCancelBooking = async (bookingId: string) => {
+    try {
+      if (user?.role === 'student') {
+        await api.student.cancelBooking(bookingId);
+      }
+      setBookings(
+        bookings.map((b) => (b.id === bookingId ? { ...b, status: 'cancelled' as const } : b))
+      );
+      toast.info('Booking cancelled');
+    } catch {
+      toast.error('Unable to cancel booking');
+    }
   };
 
   const handleSubmitIncident = (incidentData: Omit<Incident, 'id' | 'timestamp' | 'status'>) => {
@@ -457,8 +503,32 @@ export default function App() {
   };
 
   const handleScanQR = (bookingId: string) => {
+    setBookings(
+      bookings.map((b) => (b.id === bookingId ? { ...b, status: 'boarded' as const } : b))
+    );
     toast.success('Passenger verified');
   };
+
+  useEffect(() => {
+    if (!user) return;
+    const loadData = async () => {
+      try {
+        const routesData = await api.student.getRoutes();
+        if (Array.isArray(routesData) && routesData.length > 0) {
+          setRoutes(routesData);
+        }
+        if (user.role === 'student') {
+          const bookingData = await api.student.getBookings(user.id);
+          if (Array.isArray(bookingData)) {
+            setBookings(bookingData.map(mapBookingFromApi));
+          }
+        }
+      } catch {
+        return;
+      }
+    };
+    loadData();
+  }, [user]);
 
   if (!user) {
     return <Login onLogin={handleLogin} />;
@@ -604,7 +674,14 @@ export default function App() {
             </TabsContent>
 
             <TabsContent value="bookings">
-              <MyBookings bookings={userBookings} onCancelBooking={handleCancelBooking} />
+              <MyBookings
+                bookings={userBookings}
+                onCancelBooking={handleCancelBooking}
+                onViewTicket={(booking) => {
+                  setSelectedBookingForQR(booking);
+                  setQRDisplayOpen(true);
+                }}
+              />
             </TabsContent>
 
             <TabsContent value="incidents">

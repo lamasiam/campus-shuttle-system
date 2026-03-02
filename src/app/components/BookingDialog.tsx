@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -20,9 +20,11 @@ interface BookingDialogProps {
     id: string;
     name: string;
     stops: string[];
+    schedules?: { id: string; departureTime: string }[];
   } | null;
   onBook: (booking: {
     routeId: string;
+    scheduleId: string;
     date: Date;
     time: string;
     pickupStop: string;
@@ -33,40 +35,35 @@ interface BookingDialogProps {
 export function BookingDialog({ open, onClose, route, onBook }: BookingDialogProps) {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [time, setTime] = useState<string>('');
+  const [scheduleId, setScheduleId] = useState<string>('');
   const [pickupStop, setPickupStop] = useState<string>('');
   const [dropoffStop, setDropoffStop] = useState<string>('');
 
-  const timeSlots = [
-    '07:00 AM',
-    '07:30 AM',
-    '08:00 AM',
-    '08:30 AM',
-    '09:00 AM',
-    '09:30 AM',
-    '10:00 AM',
-    '10:30 AM',
-    '11:00 AM',
-    '11:30 AM',
-    '12:00 PM',
-    '12:30 PM',
-    '01:00 PM',
-    '01:30 PM',
-    '02:00 PM',
-    '02:30 PM',
-    '03:00 PM',
-    '03:30 PM',
-    '04:00 PM',
-    '04:30 PM',
-    '05:00 PM',
-    '05:30 PM',
-    '06:00 PM',
-  ];
+  const availableSchedules =
+    route?.schedules && date
+      ? route.schedules
+          .filter((s) => {
+            const d = new Date(s.departureTime);
+            return (
+              d.getFullYear() === date.getFullYear() &&
+              d.getMonth() === date.getMonth() &&
+              d.getDate() === date.getDate()
+            );
+          })
+          .sort((a, b) => new Date(a.departureTime).getTime() - new Date(b.departureTime).getTime())
+      : [];
+
+  useEffect(() => {
+    setScheduleId('');
+    setTime('');
+  }, [date, route?.id]);
 
   const handleSubmit = () => {
-    if (!route || !date || !time || !pickupStop || !dropoffStop) return;
+    if (!route || !date || !time || !pickupStop || !dropoffStop || !scheduleId) return;
 
     onBook({
       routeId: route.id,
+      scheduleId,
       date,
       time,
       pickupStop,
@@ -75,6 +72,7 @@ export function BookingDialog({ open, onClose, route, onBook }: BookingDialogPro
 
     // Reset form
     setTime('');
+    setScheduleId('');
     setPickupStop('');
     setDropoffStop('');
     onClose();
@@ -130,14 +128,34 @@ export function BookingDialog({ open, onClose, route, onBook }: BookingDialogPro
                   <Clock size={16} className="text-blue-500" />
                   Select Time
                 </Label>
-                <Select value={time} onValueChange={setTime}>
+                <Select
+                  value={scheduleId}
+                  onValueChange={(value) => {
+                    setScheduleId(value);
+                    const schedule = availableSchedules.find((s) => s.id === value);
+                    if (schedule) {
+                      setTime(
+                        new Date(schedule.departureTime).toLocaleTimeString(undefined, {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
+                      );
+                    } else {
+                      setTime('');
+                    }
+                  }}
+                  disabled={!date || availableSchedules.length === 0}
+                >
                   <SelectTrigger className="h-12 rounded-xl border-slate-200 focus:ring-blue-500">
-                    <SelectValue placeholder="Choose departure time" />
+                    <SelectValue placeholder={availableSchedules.length ? 'Choose departure time' : 'No schedules for selected date'} />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-                    {timeSlots.map((slot) => (
-                      <SelectItem key={slot} value={slot} className="rounded-lg focus:bg-blue-50">
-                        {slot}
+                    {availableSchedules.map((s) => (
+                      <SelectItem key={s.id} value={s.id} className="rounded-lg focus:bg-blue-50">
+                        {new Date(s.departureTime).toLocaleTimeString(undefined, {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -224,7 +242,7 @@ export function BookingDialog({ open, onClose, route, onBook }: BookingDialogPro
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!date || !time || !pickupStop || !dropoffStop}
+            disabled={!date || !time || !pickupStop || !dropoffStop || !scheduleId}
             className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold shadow-lg shadow-blue-200 transition-all active:scale-[0.98] rounded-xl h-12 px-8"
           >
             Confirm Booking

@@ -61,14 +61,44 @@ router.post('/bookings', async (req, res) => {
       [bookingId, studentId, scheduleId, qrCodeData, pickupStop || 0, dropoffStop || 0, 'confirmed']
     );
 
-    // Generate QR code
+    const booking = await getAsync(
+      `SELECT 
+         b.*,
+         r.name as routeName,
+         r.stops as routeStops,
+         s.departureTime
+       FROM bookings b
+       JOIN schedules s ON b.scheduleId = s.id
+       JOIN routes r ON s.routeId = r.id
+       WHERE b.id = ?`,
+      [bookingId]
+    );
+
     const qrCode = await QRCode.toDataURL(qrCodeData);
 
+    let pickupStopName;
+    let dropoffStopName;
+    try {
+      const stops = JSON.parse(booking.routeStops || '[]');
+      if (Array.isArray(stops)) {
+        pickupStopName = stops[Number(booking.pickupStop)];
+        dropoffStopName = stops[Number(booking.dropoffStop)];
+      }
+    } catch {
+      pickupStopName = undefined;
+      dropoffStopName = undefined;
+    }
+
+    const { routeStops: _, ...bookingWithoutStops } = booking;
     res.status(201).json({
       success: true,
-      bookingId,
-      qrCode,
-      qrCodeData
+      booking: {
+        ...bookingWithoutStops,
+        pickupStopName,
+        dropoffStopName,
+        qrCodeData,
+        qrCode
+      }
     });
   } catch (error) {
     console.error('Error creating booking:', error);
@@ -80,7 +110,7 @@ router.post('/bookings', async (req, res) => {
 router.get('/bookings/:studentId', async (req, res) => {
   try {
     const bookings = await allAsync(
-      `SELECT b.*, s.departureTime, r.name as routeName 
+      `SELECT b.*, s.departureTime, r.name as routeName, r.stops as routeStops
        FROM bookings b 
        JOIN schedules s ON b.scheduleId = s.id 
        JOIN routes r ON s.routeId = r.id 
@@ -89,7 +119,29 @@ router.get('/bookings/:studentId', async (req, res) => {
       [req.params.studentId]
     );
 
-    res.json(bookings);
+    const formatted = bookings.map((booking) => {
+      let pickupStopName;
+      let dropoffStopName;
+      try {
+        const stops = JSON.parse(booking.routeStops || '[]');
+        if (Array.isArray(stops)) {
+          pickupStopName = stops[Number(booking.pickupStop)];
+          dropoffStopName = stops[Number(booking.dropoffStop)];
+        }
+      } catch {
+        pickupStopName = undefined;
+        dropoffStopName = undefined;
+      }
+      const { routeStops: _, ...bookingWithoutStops } = booking;
+      return {
+        ...bookingWithoutStops,
+        pickupStopName,
+        dropoffStopName,
+        qrCodeData: booking.qrCode
+      };
+    });
+
+    res.json(formatted);
   } catch (error) {
     console.error('Error fetching bookings:', error);
     res.status(500).json({ error: 'Failed to fetch bookings' });

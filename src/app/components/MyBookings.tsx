@@ -13,15 +13,16 @@ interface Booking {
   time: string;
   pickupStop: string;
   dropoffStop: string;
-  status: 'confirmed' | 'completed' | 'cancelled';
+  status: 'confirmed' | 'completed' | 'cancelled' | 'boarded';
 }
 
 interface MyBookingsProps {
   bookings: Booking[];
   onCancelBooking: (id: string) => void;
+  onViewTicket: (booking: Booking) => void;
 }
 
-export function MyBookings({ bookings, onCancelBooking }: MyBookingsProps) {
+export function MyBookings({ bookings, onCancelBooking, onViewTicket }: MyBookingsProps) {
   const upcomingBookings = bookings.filter(
     (b) => b.status === 'confirmed' && new Date(b.date) >= new Date()
   );
@@ -33,6 +34,8 @@ export function MyBookings({ bookings, onCancelBooking }: MyBookingsProps) {
     switch (status) {
       case 'confirmed':
         return 'bg-emerald-500 text-emerald-700 bg-emerald-50 border-emerald-100';
+      case 'boarded':
+        return 'bg-indigo-500 text-indigo-700 bg-indigo-50 border-indigo-100';
       case 'completed':
         return 'bg-blue-500 text-blue-700 bg-blue-50 border-blue-100';
       case 'cancelled':
@@ -67,16 +70,28 @@ export function MyBookings({ bookings, onCancelBooking }: MyBookingsProps) {
                   <span className="text-[10px] text-slate-400 font-medium">ID: {booking.id.slice(0, 8)}</span>
                 </div>
               </div>
-              {booking.status === 'confirmed' && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onCancelBooking(booking.id)}
-                  className="h-8 w-8 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-full transition-colors"
-                >
-                  <Trash2 size={16} />
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                {booking.status === 'confirmed' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onViewTicket(booking)}
+                    className="h-8 px-3 text-xs font-bold border-slate-200"
+                  >
+                    View Ticket
+                  </Button>
+                )}
+                {booking.status === 'confirmed' && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onCancelBooking(booking.id)}
+                    className="h-8 w-8 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-full transition-colors"
+                  >
+                    <Trash2 size={16} />
+                  </Button>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

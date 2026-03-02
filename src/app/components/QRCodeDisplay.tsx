@@ -12,6 +12,8 @@ interface Booking {
   time: string;
   pickupStop: string;
   dropoffStop: string;
+  qrCodeData?: string;
+  qrCodeUrl?: string;
 }
 
 interface QRCodeDisplayProps {
@@ -25,24 +27,18 @@ export function QRCodeDisplay({ open, onClose, booking }: QRCodeDisplayProps) {
 
   useEffect(() => {
     if (booking && open) {
-      generateQRCode();
+      if (booking.qrCodeUrl) {
+        setQrCodeUrl(booking.qrCodeUrl);
+      } else {
+        generateQRCode();
+      }
     }
   }, [booking, open]);
 
   const generateQRCode = async () => {
     if (!booking) return;
     try {
-      // Create a comprehensive data payload for the QR code
-      const qrData = JSON.stringify({
-        id: booking.id,
-        route: booking.routeName,
-        date: new Date(booking.date).toISOString(),
-        time: booking.time,
-        from: booking.pickupStop,
-        to: booking.dropoffStop,
-        valid: true
-      });
-      
+      const qrData = booking.qrCodeData || booking.id;
       const url = await QRCode.toDataURL(qrData, {
         width: 200,
         margin: 2,
@@ -145,8 +141,8 @@ export function QRCodeDisplay({ open, onClose, booking }: QRCodeDisplayProps) {
                 </div>
 
                 <div className="pt-2 text-center">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">Ticket ID</span>
-                  <p className="text-xs font-mono font-bold text-slate-400">{booking.id}</p>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">Ticket Code</span>
+                  <p className="text-xs font-mono font-bold text-slate-400 break-all">{booking.qrCodeData || booking.id}</p>
                 </div>
               </div>
             </CardContent>

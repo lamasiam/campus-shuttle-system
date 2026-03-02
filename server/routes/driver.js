@@ -76,7 +76,20 @@ router.post('/scan-qr', async (req, res) => {
       return res.status(400).json({ error: 'QR code required' });
     }
 
-    const booking = await getAsync('SELECT * FROM bookings WHERE qrCode = ?', [qrCode]);
+    const booking = await getAsync(
+      `SELECT 
+         b.*,
+         u.name as passengerName,
+         r.name as routeName,
+         r.stops as routeStops,
+         s.departureTime
+       FROM bookings b
+       JOIN users u ON b.studentId = u.id
+       JOIN schedules s ON b.scheduleId = s.id
+       JOIN routes r ON s.routeId = r.id
+       WHERE b.qrCode = ?`,
+      [qrCode]
+    );
 
     if (!booking) {
       return res.status(404).json({ error: 'Booking not found' });
@@ -91,9 +104,23 @@ router.post('/scan-qr', async (req, res) => {
       ['boarded', booking.id]
     );
 
+    let pickupStopName;
+    let dropoffStopName;
+    try {
+      const stops = JSON.parse(booking.routeStops || '[]');
+      if (Array.isArray(stops)) {
+        pickupStopName = stops[Number(booking.pickupStop)];
+        dropoffStopName = stops[Number(booking.dropoffStop)];
+      }
+    } catch {
+      pickupStopName = undefined;
+      dropoffStopName = undefined;
+    }
+
+    const { routeStops: _, ...bookingWithoutStops } = booking;
     res.json({
       success: true,
-      booking: { ...booking, status: 'boarded' }
+      booking: { ...bookingWithoutStops, pickupStopName, dropoffStopName, status: 'boarded' }
     });
   } catch (error) {
     console.error('Error scanning QR:', error);

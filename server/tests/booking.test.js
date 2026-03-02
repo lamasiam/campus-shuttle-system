@@ -53,6 +53,16 @@ describe('Booking System', () => {
     expect(bookings.length).toBeGreaterThan(0);
   });
 
+  it('should mark a booking as boarded', async () => {
+    await runAsync(
+      'UPDATE bookings SET status = ? WHERE id = ?',
+      ['boarded', bookingId]
+    );
+
+    const booking = await getAsync('SELECT * FROM bookings WHERE id = ?', [bookingId]);
+    expect(booking.status).toBe('boarded');
+  });
+
   it('should cancel a booking', async () => {
     await runAsync(
       'UPDATE bookings SET status = ? WHERE id = ?',
